@@ -66,7 +66,7 @@ def handler(event, context):
     except bedrock_runtime.exceptions.ThrottlingException:
         return response(429, {'error': 'Too many requests. Please try again shortly.'})
     except Exception as e:
-        print(f'Error: {str(e)}')
+        print(f'Error: {type(e).__name__}: {str(e)}')
         return response(500, {'error': 'Something went wrong. Please try again.'})
 
 
