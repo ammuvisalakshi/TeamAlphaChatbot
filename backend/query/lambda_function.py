@@ -1,11 +1,29 @@
 import json
 import os
 import boto3
+import re
 
 bedrock_runtime = boto3.client('bedrock-agent-runtime', region_name='us-east-1')
+s3_client = boto3.client('s3', region_name='us-east-1')
 
 AGENT_ID = os.environ['AGENT_ID']
 AGENT_ALIAS_ID = os.environ['AGENT_ALIAS_ID']
+
+
+def generate_presigned_url(s3_uri):
+    """Convert s3://bucket/key to a presigned URL (1 hour expiry)."""
+    match = re.match(r's3://([^/]+)/(.*)', s3_uri)
+    if not match:
+        return s3_uri
+    bucket, key = match.groups()
+    try:
+        return s3_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': bucket, 'Key': key},
+            ExpiresIn=3600
+        )
+    except Exception:
+        return s3_uri
 
 
 def handler(event, context):
@@ -44,8 +62,14 @@ def handler(event, context):
                             source = ref.get('location', {}).get('s3Location', {}).get('uri', '')
                             text_snippet = ref.get('content', {}).get('text', '')[:200]
                             if source:
+                                filename = source.split('/')[-1]
+                                # Remove UUID prefix if present (e.g. "abc123_MyDoc.pdf" → "MyDoc.pdf")
+                                if '_' in filename:
+                                    filename = filename.split('_', 1)[1]
                                 citations.append({
                                     'source': source,
+                                    'filename': filename,
+                                    'url': generate_presigned_url(source),
                                     'snippet': text_snippet
                                 })
 

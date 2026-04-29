@@ -341,8 +341,11 @@
         sources.forEach(s => {
           const item = document.createElement('div');
           item.className = 'source-item';
-          const filename = s.source.split('/').pop();
-          item.innerHTML = `<strong>${filename}</strong><br>${s.snippet}...`;
+          const filename = s.filename || s.source.split('/').pop();
+          const link = s.url
+            ? `<a href="${s.url}" target="_blank" style="color: #e94560; text-decoration: none; font-weight: 600;">${filename}</a>`
+            : `<strong>${filename}</strong>`;
+          item.innerHTML = `${link}<br>${s.snippet}...`;
           list.appendChild(item);
         });
 
